@@ -1,5 +1,10 @@
 const nodemailer = require('nodemailer');
 
+// Support both naming conventions for env vars
+const SMTP_USER = process.env.SMTP_USER || process.env.EMAIL_USER;
+const SMTP_PASS = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD;
+const NOTIFY_EMAIL = process.env.NOTIFICATION_EMAIL || process.env.EMAIL_NOTIFICATION_TO || SMTP_USER;
+
 // Create reusable transporter
 const createTransporter = () => {
     return nodemailer.createTransport({
@@ -7,32 +12,29 @@ const createTransporter = () => {
         port: parseInt(process.env.SMTP_PORT) || 587,
         secure: false,
         auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS
+            user: SMTP_USER,
+            pass: SMTP_PASS
         }
     });
 };
 
 /**
  * Send email notification
- * @param {Object} options - Email options
- * @param {string} options.to - Recipient email
- * @param {string} options.subject - Email subject
- * @param {string} options.html - HTML content
- * @param {string} options.text - Plain text content (fallback)
  */
 const sendEmail = async ({ to, subject, html, text }) => {
     try {
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        if (!SMTP_USER || !SMTP_PASS) {
             console.log('📧 Email not configured. Skipping notification.');
+            console.log('📧 SMTP_USER:', SMTP_USER ? 'SET' : 'MISSING');
+            console.log('📧 SMTP_PASS:', SMTP_PASS ? 'SET' : 'MISSING');
             return { success: false, message: 'Email not configured' };
         }
 
         const transporter = createTransporter();
 
         const mailOptions = {
-            from: `"UYNM Website" <${process.env.SMTP_USER}>`,
-            to: to || process.env.NOTIFICATION_EMAIL,
+            from: `"UYNM Website" <${SMTP_USER}>`,
+            to: to || NOTIFY_EMAIL,
             subject,
             html,
             text: text || html.replace(/<[^>]*>/g, '')
