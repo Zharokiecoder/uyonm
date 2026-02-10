@@ -7,14 +7,18 @@ const NOTIFY_EMAIL = process.env.NOTIFICATION_EMAIL || process.env.EMAIL_NOTIFIC
 
 // Create reusable transporter
 const createTransporter = () => {
+    const port = parseInt(process.env.SMTP_PORT) || 465;
     return nodemailer.createTransport({
         host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: parseInt(process.env.SMTP_PORT) || 587,
-        secure: false,
+        port: port,
+        secure: port === 465, // true for 465, false for other ports
         auth: {
             user: SMTP_USER,
             pass: SMTP_PASS
-        }
+        },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 10000
     });
 };
 
