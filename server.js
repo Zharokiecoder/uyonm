@@ -18,8 +18,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // CORS configuration - allow frontend domains
 const allowedOrigins = [
-    'http://localhost:5500',
-    'http://127.0.0.1:5500',
+    'https://uyonm.com',
+    'https://www.uyonm.com',
     process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -28,11 +28,10 @@ app.use(cors({
         // Allow requests with no origin (file://, mobile apps, curl, etc.)
         if (!origin) return callback(null, true);
 
-        // In development, allow all localhost origins
-        if (process.env.NODE_ENV === 'development' &&
-            (origin.startsWith('http://localhost') ||
-                origin.startsWith('http://127.0.0.1') ||
-                origin.startsWith('file://'))) {
+        // Always allow localhost and 127.0.0.1 (any port) for development
+        if (origin.startsWith('http://localhost') ||
+            origin.startsWith('http://127.0.0.1') ||
+            origin.startsWith('file://')) {
             return callback(null, true);
         }
 
