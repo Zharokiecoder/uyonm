@@ -1,52 +1,37 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 // Support both naming conventions for env vars
-const SMTP_USER = process.env.SMTP_USER || process.env.EMAIL_USER;
-const SMTP_PASS = process.env.SMTP_PASS || process.env.EMAIL_PASSWORD;
-const NOTIFY_EMAIL = process.env.NOTIFICATION_EMAIL || process.env.EMAIL_NOTIFICATION_TO || SMTP_USER;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const NOTIFY_EMAIL = process.env.NOTIFICATION_EMAIL || process.env.EMAIL_NOTIFICATION_TO || 'uyonm2026@gmail.com';
 
-// Create reusable transporter
-const createTransporter = () => {
-    const port = parseInt(process.env.SMTP_PORT) || 465;
-    return nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: port,
-        secure: port === 465, // true for 465, false for other ports
-        auth: {
-            user: SMTP_USER,
-            pass: SMTP_PASS
-        },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000
-    });
-};
+// Initialize Resend client
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 /**
- * Send email notification
+ * Send email notification using Resend HTTP API
  */
 const sendEmail = async ({ to, subject, html, text }) => {
     try {
-        if (!SMTP_USER || !SMTP_PASS) {
-            console.log('📧 Email not configured. Skipping notification.');
-            console.log('📧 SMTP_USER:', SMTP_USER ? 'SET' : 'MISSING');
-            console.log('📧 SMTP_PASS:', SMTP_PASS ? 'SET' : 'MISSING');
+        if (!resend) {
+            console.log('📧 Email not configured. Set RESEND_API_KEY env var.');
             return { success: false, message: 'Email not configured' };
         }
 
-        const transporter = createTransporter();
-
-        const mailOptions = {
-            from: `"UYNM Website" <${SMTP_USER}>`,
+        const { data, error } = await resend.emails.send({
+            from: 'UYNM Website <onboarding@resend.dev>',
             to: to || NOTIFY_EMAIL,
             subject,
             html,
             text: text || html.replace(/<[^>]*>/g, '')
-        };
+        });
 
-        const info = await transporter.sendMail(mailOptions);
-        console.log('✅ Email sent:', info.messageId);
-        return { success: true, messageId: info.messageId };
+        if (error) {
+            console.error('❌ Email error:', error.message);
+            return { success: false, error: error.message };
+        }
+
+        console.log('✅ Email sent:', data.id);
+        return { success: true, messageId: data.id };
     } catch (error) {
         console.error('❌ Email error:', error.message);
         return { success: false, error: error.message };
